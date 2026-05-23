@@ -1,0 +1,171 @@
+:root {
+  color-scheme: light;
+  font-family: "Google Sans", Roboto, Arial, sans-serif;
+  color: #202124;
+  background: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 450px;
+  height: 500px;
+  margin: 0;
+}
+
+body {
+  overflow-y: auto;
+  background: #ffffff;
+}
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid #e8eaed;
+  background: #ffffff;
+}
+
+.app-header h1 {
+  margin: 0 0 14px;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.breadcrumbs {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.breadcrumbs::-webkit-scrollbar {
+  display: none;
+}
+
+.breadcrumbs ol {
+  display: flex;
+  align-items: center;
+  min-width: max-content;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.breadcrumb-item {
+  display: flex;
+  align-items: center;
+}
+
+.breadcrumb-separator {
+  margin: 0 7px;
+  color: #5f6368;
+  font-size: 16px;
+}
+
+.breadcrumb-button {
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 14px;
+  color: #3c4043;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.breadcrumb-button:hover:not(:disabled),
+.breadcrumb-button:focus-visible:not(:disabled) {
+  color: #174ea6;
+  background: #e8f0fe;
+  outline: none;
+}
+
+.breadcrumb-button:disabled {
+  color: #202124;
+  font-weight: 500;
+  cursor: default;
+}
+
+.content {
+  padding: 16px 18px 20px;
+}
+
+.status {
+  margin: 22px 0;
+  color: #5f6368;
+  font-size: 14px;
+  text-align: center;
+}
+
+.status.error {
+  padding: 12px;
+  border-radius: 8px;
+  color: #b3261e;
+  background: #fce8e6;
+}
+
+.bookmark-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.bookmark-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  aspect-ratio: 1 / 1;
+  padding: 12px 9px;
+  border: 1px solid #dadce0;
+  border-radius: 12px;
+  color: #202124;
+  background: #ffffff;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.bookmark-card:hover,
+.bookmark-card:focus-visible,
+.bookmark-card.is-selected {
+  border-color: #a8c7fa;
+  background: #e8f0fe;
+}
+
+.bookmark-card:focus-visible {
+  outline: 2px solid #1a73e8;
+  outline-offset: 1px;
+}
+
+.bookmark-card.is-selected {
+  box-shadow: inset 0 0 0 1px #1a73e8;
+}
+
+.card-icon {
+  margin-bottom: 10px;
+  font-size: 40px;
+  line-height: 1;
+}
+
+.card-title {
+  display: -webkit-box;
+  overflow: hidden;
+  width: 100%;
+  color: #3c4043;
+  font-size: 13px;
+  line-height: 18px;
+  text-align: center;
+  word-break: break-word;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}

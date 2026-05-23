@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "DockMark",
+  "description": "Explora tus marcadores en una cuadrícula limpia y moderna.",
+  "version": "1.0.0",
+  "icons": {
+    "16": "assets/dockmark-icon-16.png",
+    "32": "assets/dockmark-icon-32.png",
+    "48": "assets/dockmark-icon-48.png",
+    "128": "assets/dockmark-icon-128.png"
+  },
+  "permissions": ["bookmarks"],
+  "action": {
+    "default_title": "Abrir DockMark",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "assets/dockmark-icon-16.png",
+      "32": "assets/dockmark-icon-32.png",
+      "48": "assets/dockmark-icon-48.png",
+      "128": "assets/dockmark-icon-128.png"
+    }
+  },
+  "chrome_url_overrides": {
+    "newtab": "newtab.html"
+  }
+}

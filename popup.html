@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administrador de marcadores</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>Marcadores</h1>
+      <nav class="breadcrumbs" aria-label="Ruta actual">
+        <ol id="breadcrumbs"></ol>
+      </nav>
+    </header>
+
+    <main class="content">
+      <p id="status" class="status" role="status" hidden></p>
+      <section
+        id="bookmark-grid"
+        class="bookmark-grid"
+        aria-label="Contenido de la carpeta actual"
+      ></section>
+    </main>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

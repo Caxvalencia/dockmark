@@ -1,0 +1,63 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="132" y1="86" x2="904" y2="934" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#282A38"/>
+      <stop offset="1" stop-color="#11131B"/>
+    </linearGradient>
+
+    <linearGradient id="bookmark" x1="268" y1="172" x2="746" y2="760" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3EF0D2"/>
+      <stop offset="0.42" stop-color="#657CFF"/>
+      <stop offset="1" stop-color="#FF4F7A"/>
+    </linearGradient>
+
+    <linearGradient id="dock" x1="188" y1="660" x2="836" y2="860" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FF6B7A"/>
+      <stop offset="1" stop-color="#FF3D68"/>
+    </linearGradient>
+
+    <linearGradient id="tile" x1="384" y1="294" x2="636" y2="586" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.97"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.82"/>
+    </linearGradient>
+
+    <filter id="shadow" x="120" y="126" width="784" height="774" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="36" stdDeviation="42" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+
+    <filter id="dockShadow" x="122" y="614" width="780" height="280" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="28" stdDeviation="32" flood-color="#000000" flood-opacity="0.38"/>
+    </filter>
+  </defs>
+
+  <rect width="1024" height="1024" rx="230" fill="url(#bg)"/>
+
+  <g filter="url(#shadow)">
+    <!-- Bookmark principal -->
+    <path d="M322 196C322 173.9 339.9 156 362 156H662C684.1 156 702 173.9 702 196V705C702 740.3 659.5 758.3 634.1 733.8L528.7 632.2C519.4 623.2 504.6 623.2 495.3 632.2L389.9 733.8C364.5 758.3 322 740.3 322 705V196Z" fill="url(#bookmark)"/>
+
+    <!-- Panel interno de dashboard -->
+    <rect x="378" y="256" width="268" height="326" rx="44" fill="#12141C" fill-opacity="0.34"/>
+
+    <!-- Cards del dashboard -->
+    <rect x="416" y="306" width="192" height="52" rx="20" fill="url(#tile)"/>
+    <rect x="416" y="398" width="76" height="76" rx="24" fill="url(#tile)"/>
+    <rect x="532" y="398" width="76" height="76" rx="24" fill="url(#tile)"/>
+    <rect x="416" y="514" width="192" height="52" rx="20" fill="url(#tile)"/>
+
+    <!-- Conexión tipo nexo -->
+    <path d="M454 436H570M512 358V514" stroke="#151720" stroke-width="22" stroke-linecap="round" stroke-opacity="0.52"/>
+
+    <!-- Pestaña superior tipo navegador -->
+    <path d="M406 222C406 210.9 414.9 202 426 202H598C609.1 202 618 210.9 618 222V226C618 237.1 609.1 246 598 246H426C414.9 246 406 237.1 406 226V222Z" fill="#FFFFFF" fill-opacity="0.84"/>
+  </g>
+
+  <!-- Dock inferior -->
+  <g filter="url(#dockShadow)">
+    <path d="M208 706C208 675.1 233.1 650 264 650H760C790.9 650 816 675.1 816 706V754C816 784.9 790.9 810 760 810H264C233.1 810 208 784.9 208 754V706Z" fill="#181A23" fill-opacity="0.92"/>
+    <path d="M286 706C286 694.9 294.9 686 306 686H718C729.1 686 738 694.9 738 706V754C738 765.1 729.1 774 718 774H306C294.9 774 286 765.1 286 754V706Z" fill="url(#dock)"/>
+    <circle cx="364" cy="730" r="20" fill="#FFFFFF" fill-opacity="0.92"/>
+    <circle cx="512" cy="730" r="20" fill="#FFFFFF" fill-opacity="0.92"/>
+    <circle cx="660" cy="730" r="20" fill="#FFFFFF" fill-opacity="0.92"/>
+  </g>
+</svg>
