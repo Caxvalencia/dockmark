@@ -5,6 +5,9 @@ const state = {
   currentSpaceId: null,
   contextNode: null,
   isCreating: false,
+  expandedFolders: new Set(
+    JSON.parse(localStorage.getItem("dockmark-expanded-folders") || "[]"),
+  ),
 };
 
 const elements = {
@@ -17,6 +20,8 @@ const elements = {
   cmOpenNew: document.getElementById("cm-open-new"),
   cmEdit: document.getElementById("cm-edit"),
   cmDelete: document.getElementById("cm-delete"),
+  expandAllBtn: document.getElementById("expand-all-btn"),
+  collapseAllBtn: document.getElementById("collapse-all-btn"),
   editModal: document.getElementById("edit-modal"),
   editName: document.getElementById("edit-name"),
   editUrl: document.getElementById("edit-url"),
@@ -35,14 +40,34 @@ async function initialize() {
   setupContextMenu();
   setupModal();
   attachBookmarkListeners();
+  setupViewControls();
+}
+
+function setupViewControls() {
+  if (elements.expandAllBtn) {
+    elements.expandAllBtn.addEventListener("click", () => {
+      document.querySelectorAll(".collection-row").forEach(row => {
+        row.classList.remove("collapsed");
+      });
+    });
+  }
+
+  if (elements.collapseAllBtn) {
+    elements.collapseAllBtn.addEventListener("click", () => {
+      document.querySelectorAll(".collection-row").forEach(row => {
+        row.classList.add("collapsed");
+      });
+    });
+  }
 }
 
 function initializeTheme() {
   const savedTheme = localStorage.getItem("dockmark-theme") || "light";
+
   if (savedTheme === "dark") {
     document.body.classList.add("dark-theme");
   }
-  
+
   const themeBtn = document.getElementById("theme-toggle");
   if (themeBtn) {
     themeBtn.addEventListener("click", () => {
@@ -75,17 +100,55 @@ async function loadBookmarks() {
   }
 }
 
-function renderSidebar() {
-  const fragment = document.createDocumentFragment();
+function saveExpandedState() {
+  localStorage.setItem(
+    "dockmark-expanded-folders",
+    JSON.stringify([...state.expandedFolders]),
+  );
+}
 
-  state.rootFolders.forEach((folder) => {
+function renderSidebar() {
+  elements.sidebarSpaces.replaceChildren(createTreeList(state.rootFolders));
+}
+
+function createTreeList(folders) {
+  const ul = document.createElement("ul");
+  ul.className = "sidebar-spaces-list";
+
+  folders.forEach((folder) => {
     const li = document.createElement("li");
-    li.className = "space-item";
     li.dataset.id = folder.id;
 
-    // Set active if it's the current space
+    if (state.expandedFolders.has(folder.id)) {
+      li.classList.add("expanded");
+    }
+
+    const container = document.createElement("div");
+    container.className = "space-item-container";
     if (state.currentSpaceId === folder.id) {
-      li.classList.add("active");
+      container.classList.add("active");
+    }
+
+    const hasChildren =
+      folder.children && folder.children.some((child) => !child.url);
+
+    const toggleBtn = document.createElement("div");
+    toggleBtn.className = "tree-toggle";
+    if (hasChildren) {
+      toggleBtn.textContent = "▶";
+      toggleBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        li.classList.toggle("expanded");
+        if (li.classList.contains("expanded")) {
+          state.expandedFolders.add(folder.id);
+        } else {
+          state.expandedFolders.delete(folder.id);
+        }
+        saveExpandedState();
+      });
+    } else {
+      toggleBtn.classList.add("empty");
+      toggleBtn.textContent = "▶";
     }
 
     const icon = document.createElement("span");
@@ -93,25 +156,76 @@ function renderSidebar() {
     icon.textContent = "📁";
 
     const title = document.createElement("span");
+    title.className = "space-title";
     title.textContent = folder.title;
 
-    li.appendChild(icon);
-    li.appendChild(title);
+    container.appendChild(toggleBtn);
+    container.appendChild(icon);
+    container.appendChild(title);
 
-    li.addEventListener("click", () => selectSpace(folder));
-    fragment.appendChild(li);
+    container.addEventListener("click", () => selectSpace(folder));
+    li.appendChild(container);
+
+    if (hasChildren) {
+      const subFolders = folder.children.filter((child) => !child.url);
+      li.appendChild(createTreeList(subFolders));
+    }
+
+    ul.appendChild(li);
   });
 
-  elements.sidebarSpaces.replaceChildren(fragment);
+  return ul;
+}
+
+async function updateBreadcrumbs(node) {
+  const path = [];
+  let current = node;
+
+  while (current && current.id !== "0") {
+    path.unshift(current);
+
+    if (!current.parentId || current.parentId === "0") {
+      break;
+    }
+
+    const parentNode = await chrome.bookmarks.get(current.parentId);
+    current = parentNode[0];
+  }
+
+  elements.currentSpaceTitle.replaceChildren();
+
+  path.forEach((p, index) => {
+    const span = document.createElement("span");
+    span.textContent = p.title;
+    span.className = "breadcrumb-item";
+
+    if (index < path.length - 1) {
+      span.style.cursor = "pointer";
+      span.addEventListener("click", () => selectSpace(p));
+    }
+
+    elements.currentSpaceTitle.appendChild(span);
+
+    if (index < path.length - 1) {
+      const sep = document.createElement("span");
+      sep.textContent = "/";
+      sep.className = "breadcrumb-separator";
+      elements.currentSpaceTitle.appendChild(sep);
+    }
+  });
 }
 
 async function selectSpace(folder) {
   state.currentSpaceId = folder.id;
-  elements.currentSpaceTitle.textContent = folder.title;
+  await updateBreadcrumbs(folder);
 
-  // Update active state in sidebar
-  document.querySelectorAll(".space-item").forEach((item) => {
-    item.classList.toggle("active", item.dataset.id === folder.id);
+  // Update active state in sidebar tree
+  document.querySelectorAll(".sidebar-spaces-list li").forEach((li) => {
+    const container = li.querySelector(".space-item-container");
+
+    if (container) {
+      container.classList.toggle("active", li.dataset.id === folder.id);
+    }
   });
 
   // Load collections (subfolders) for this space
@@ -119,7 +233,7 @@ async function selectSpace(folder) {
     const [spaceNode] = await chrome.bookmarks.getSubTree(folder.id);
     const children = spaceNode.children || [];
 
-    renderCollections(children);
+    renderCollections(children, folder.title);
   } catch (error) {
     console.error("Error loading space:", error);
   }
@@ -142,7 +256,7 @@ function flattenFolders(nodes, path = "") {
   return folders;
 }
 
-function renderCollections(nodes) {
+function renderCollections(nodes, spaceTitle = "") {
   elements.collectionsContainer.replaceChildren();
 
   // Separar los enlaces directos (sin carpeta)
@@ -150,9 +264,11 @@ function renderCollections(nodes) {
 
   let collectionsCount = 0;
 
-  // Renderizar enlaces directos como colección "Sin carpeta"
+  // Renderizar enlaces directos usando el nombre de la carpeta actual
   if (directLinks.length > 0) {
-    renderCollectionRow("Sin carpeta", directLinks);
+    const title = spaceTitle ? spaceTitle : "Enlaces directos";
+    // Pasamos un objeto mock de folderNode para que soporte drag & drop si fuera necesario
+    renderCollectionRow(title, directLinks, { id: state.currentSpaceId });
     collectionsCount++;
   }
 
@@ -182,9 +298,22 @@ function renderCollectionRow(title, items, folderNode = null) {
   const header = document.createElement("div");
   header.className = "collection-header";
 
+  const headerLeft = document.createElement("div");
+  headerLeft.className = "collection-header-left";
+  headerLeft.style.display = "flex";
+  headerLeft.style.alignItems = "center";
+  headerLeft.style.cursor = "pointer";
+
+  const toggleBtn = document.createElement("span");
+  toggleBtn.className = "collection-toggle";
+  toggleBtn.textContent = "▼";
+
   const titleEl = document.createElement("h2");
-  titleEl.innerHTML = `${title} <span style="color:var(--text-muted);font-size:14px;font-weight:normal;">(${items.length})</span>`;
-  header.appendChild(titleEl);
+  titleEl.innerHTML = `${title} <span style="color:var(--text-muted);font-size:14px;font-weight:normal;margin-left:8px;">(${items.length})</span>`;
+  
+  headerLeft.appendChild(toggleBtn);
+  headerLeft.appendChild(titleEl);
+  header.appendChild(headerLeft);
 
   if (folderNode && folderNode.id !== state.currentSpaceId) {
     const editBtn = document.createElement("button");
@@ -211,6 +340,10 @@ function renderCollectionRow(title, items, folderNode = null) {
   row.appendChild(header);
   row.appendChild(cardsContainer);
   elements.collectionsContainer.appendChild(row);
+
+  headerLeft.addEventListener("click", () => {
+    row.classList.toggle("collapsed");
+  });
 
   if (folderNode) {
     row.addEventListener("dragover", (e) => {

@@ -27,7 +27,9 @@ body.dark-theme {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
   background-color: var(--bg-dark);
   color: var(--text-main);
   height: 100vh;
@@ -114,33 +116,80 @@ body {
   margin-top: 20px;
 }
 
-.nav-section ul {
+/* Tree View Styles */
+.sidebar-spaces-list {
   list-style: none;
+  padding: 0;
+  margin: 0;
 }
 
-.space-item {
+.sidebar-spaces-list ul {
+  list-style: none;
+  padding-left: 16px;
+  margin: 0;
+  display: none;
+}
+
+.sidebar-spaces-list .expanded > ul {
+  display: block;
+}
+
+.space-item-container {
   display: flex;
   align-items: center;
-  padding: 10px 12px;
-  margin: 4px -12px;
+  padding: 6px 8px;
+  margin: 2px 0;
   border-radius: 6px;
   cursor: pointer;
   color: var(--text-main);
-  font-size: 14px;
+  font-size: 13px;
   transition: background-color 0.2s;
 }
 
-.space-item:hover, .space-item.active {
-  background-color: rgba(255, 255, 255, 0.05);
+.space-item-container:hover,
+.space-item-container.active {
+  background-color: rgba(128, 128, 128, 0.15);
 }
 
-.space-item.active {
+.space-item-container.active {
   color: var(--accent-color);
+  font-weight: 500;
+}
+
+.tree-toggle {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 4px;
+  font-size: 10px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.tree-toggle:hover {
+  color: var(--text-main);
+}
+
+.tree-toggle.empty {
+  visibility: hidden;
+}
+
+.expanded > .space-item-container .tree-toggle {
+  transform: rotate(90deg);
 }
 
 .space-icon {
-  margin-right: 10px;
-  font-size: 16px;
+  margin-right: 8px;
+  font-size: 14px;
+}
+
+.space-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sidebar-footer {
@@ -196,7 +245,21 @@ body {
 
 .collection-count {
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: 14px;
+}
+
+.breadcrumb-item {
+  color: var(--text-main);
+  transition: color 0.2s;
+}
+
+.breadcrumb-item:hover {
+  color: var(--accent-color);
+}
+
+.breadcrumb-separator {
+  color: var(--text-muted);
+  margin: 0 8px;
 }
 
 .primary-btn {
@@ -272,38 +335,26 @@ body {
 }
 
 .collection-cards {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 16px;
-  overflow-x: auto;
-  padding-bottom: 10px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-color) transparent;
-}
-
-.collection-cards::-webkit-scrollbar {
-  height: 6px;
-}
-
-.collection-cards::-webkit-scrollbar-thumb {
-  background-color: var(--border-color);
-  border-radius: 3px;
+  padding-bottom: 8px;
 }
 
 /* Card */
 .bookmark-card {
-  flex: 0 0 240px;
+  width: 100%;
   background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
-  padding: 16px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  cursor: pointer;
   transition: transform 0.2s, background-color 0.2s;
-  border: 1px solid transparent;
+  cursor: pointer;
   text-decoration: none;
   color: var(--text-main);
-  height: 120px;
+  position: relative;
 }
 
 .bookmark-card:hover {
@@ -368,7 +419,7 @@ body {
   background-color: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   z-index: 1000;
   min-width: 160px;
 }
@@ -405,8 +456,11 @@ body {
 /* Modal */
 .modal {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.6);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -472,7 +526,7 @@ body {
 }
 
 .btn:hover {
-  background: rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 /* Drag and drop */
@@ -500,7 +554,9 @@ body {
   cursor: pointer;
   font-size: 14px;
   opacity: 0;
-  transition: opacity 0.2s, color 0.2s;
+  transition:
+    opacity 0.2s,
+    color 0.2s;
   padding: 4px;
 }
 
@@ -510,4 +566,22 @@ body {
 
 .collection-edit-btn:hover {
   color: var(--text-main);
+}
+
+.collection-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  font-size: 10px;
+  color: var(--text-muted);
+  transition: transform 0.2s;
+}
+
+.collection-row.collapsed .collection-toggle {
+  transform: rotate(-90deg);
+}
+
+.collection-row.collapsed .collection-cards {
+  display: none;
 }
