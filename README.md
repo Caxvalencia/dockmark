@@ -1,4 +1,9 @@
+<p align="center">
+  <img src="assets/banner.png" alt="DockMark Banner" width="100%">
+</p>
+
 # DockMark
+
 
 DockMark es una extensión moderna para Google Chrome diseñada para transformar tu página de "Nueva Pestaña" en un organizador visual de marcadores potente y elegante.
 
