@@ -8,6 +8,9 @@ const state = {
   expandedFolders: new Set(
     JSON.parse(localStorage.getItem("dockmark-expanded-folders") || "[]"),
   ),
+  collapsedCollections: new Set(
+    JSON.parse(localStorage.getItem("dockmark-collapsed-collections") || "[]"),
+  ),
 };
 
 const elements = {
@@ -46,17 +49,29 @@ async function initialize() {
 function setupViewControls() {
   if (elements.expandAllBtn) {
     elements.expandAllBtn.addEventListener("click", () => {
-      document.querySelectorAll(".collection-row").forEach(row => {
+      document.querySelectorAll(".collection-row").forEach((row) => {
         row.classList.remove("collapsed");
       });
+      state.collapsedCollections.clear();
+      localStorage.setItem(
+        "dockmark-collapsed-collections",
+        JSON.stringify([...state.collapsedCollections]),
+      );
     });
   }
 
   if (elements.collapseAllBtn) {
     elements.collapseAllBtn.addEventListener("click", () => {
-      document.querySelectorAll(".collection-row").forEach(row => {
+      document.querySelectorAll(".collection-row").forEach((row) => {
         row.classList.add("collapsed");
+        if (row.dataset.id) {
+          state.collapsedCollections.add(row.dataset.id);
+        }
       });
+      localStorage.setItem(
+        "dockmark-collapsed-collections",
+        JSON.stringify([...state.collapsedCollections]),
+      );
     });
   }
 }
@@ -89,8 +104,22 @@ async function loadBookmarks() {
 
     renderSidebar();
 
-    // Select the first space by default
-    if (state.rootFolders.length > 0) {
+    // Select the previous space or first space by default
+    const savedSpaceId = localStorage.getItem("dockmark-current-space");
+    if (savedSpaceId) {
+      try {
+        const nodes = await chrome.bookmarks.get(savedSpaceId);
+        if (nodes && nodes.length > 0) {
+          selectSpace(nodes[0]);
+        } else if (state.rootFolders.length > 0) {
+          selectSpace(state.rootFolders[0]);
+        }
+      } catch (e) {
+        if (state.rootFolders.length > 0) {
+          selectSpace(state.rootFolders[0]);
+        }
+      }
+    } else if (state.rootFolders.length > 0) {
       selectSpace(state.rootFolders[0]);
     }
   } catch (error) {
@@ -217,6 +246,7 @@ async function updateBreadcrumbs(node) {
 
 async function selectSpace(folder) {
   state.currentSpaceId = folder.id;
+  localStorage.setItem("dockmark-current-space", folder.id);
   await updateBreadcrumbs(folder);
 
   // Update active state in sidebar tree
@@ -294,6 +324,12 @@ function renderCollections(nodes, spaceTitle = "") {
 function renderCollectionRow(title, items, folderNode = null) {
   const row = document.createElement("div");
   row.className = "collection-row";
+  if (folderNode && folderNode.id) {
+    row.dataset.id = folderNode.id;
+    if (state.collapsedCollections.has(folderNode.id)) {
+      row.classList.add("collapsed");
+    }
+  }
 
   const header = document.createElement("div");
   header.className = "collection-header";
@@ -310,7 +346,7 @@ function renderCollectionRow(title, items, folderNode = null) {
 
   const titleEl = document.createElement("h2");
   titleEl.innerHTML = `${title} <span style="color:var(--text-muted);font-size:14px;font-weight:normal;margin-left:8px;">(${items.length})</span>`;
-  
+
   headerLeft.appendChild(toggleBtn);
   headerLeft.appendChild(titleEl);
   header.appendChild(headerLeft);
@@ -343,6 +379,18 @@ function renderCollectionRow(title, items, folderNode = null) {
 
   headerLeft.addEventListener("click", () => {
     row.classList.toggle("collapsed");
+    const isCollapsed = row.classList.contains("collapsed");
+    if (folderNode && folderNode.id) {
+      if (isCollapsed) {
+        state.collapsedCollections.add(folderNode.id);
+      } else {
+        state.collapsedCollections.delete(folderNode.id);
+      }
+      localStorage.setItem(
+        "dockmark-collapsed-collections",
+        JSON.stringify([...state.collapsedCollections]),
+      );
+    }
   });
 
   if (folderNode) {
