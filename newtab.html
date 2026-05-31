@@ -49,56 +49,59 @@
         </nav>
 
         <div class="sidebar-footer">
-          <div class="settings-panel">
-            <label>
-              Tema
-              <select id="theme-select">
-                <option value="system">Sistema</option>
-                <option value="light">Claro</option>
-                <option value="dark">Oscuro</option>
-              </select>
-            </label>
-            <label>
-              Densidad
-              <select id="density-select">
-                <option value="compact">Compacta</option>
-                <option value="comfortable">Cómoda</option>
-                <option value="large">Grande</option>
-              </select>
-            </label>
-            <label>
-              Iconos
-              <input type="range" id="icon-size-input" min="24" max="56" />
-            </label>
-            <label>
-              Ancho mínimo
-              <input
-                type="number"
-                id="min-card-width-input"
-                min="180"
-                max="420"
-                step="10"
-              />
-            </label>
-            <label>
-              Acento
-              <input type="color" id="accent-color-input" />
-            </label>
-            <div class="settings-actions">
-              <button class="settings-btn" id="export-config-btn">
-                Exportar
-              </button>
-              <button class="settings-btn" id="import-config-btn">
-                Importar
-              </button>
-              <input
-                type="file"
-                id="import-config-input"
-                accept="application/json"
-                hidden
-              />
+          <details class="settings-disclosure" id="settings-disclosure">
+            <summary>Personalización</summary>
+            <div class="settings-panel">
+              <label>
+                Tema
+                <select id="theme-select">
+                  <option value="system">Sistema</option>
+                  <option value="light">Claro</option>
+                  <option value="dark">Oscuro</option>
+                </select>
+              </label>
+              <label>
+                Densidad
+                <select id="density-select">
+                  <option value="compact">Compacta</option>
+                  <option value="comfortable">Cómoda</option>
+                  <option value="large">Grande</option>
+                </select>
+              </label>
+              <label>
+                Iconos
+                <input type="range" id="icon-size-input" min="24" max="56" />
+              </label>
+              <label>
+                Ancho mínimo
+                <input
+                  type="number"
+                  id="min-card-width-input"
+                  min="180"
+                  max="420"
+                  step="10"
+                />
+              </label>
+              <label>
+                Acento
+                <input type="color" id="accent-color-input" />
+              </label>
+              <div class="settings-actions">
+                <button class="settings-btn" id="export-config-btn">
+                  Exportar
+                </button>
+                <button class="settings-btn" id="import-config-btn">
+                  Importar
+                </button>
+                <input
+                  type="file"
+                  id="import-config-input"
+                  accept="application/json"
+                  hidden
+                />
+              </div>
             </div>
-          </div>
+          </details>
         </div>
       </aside>
 

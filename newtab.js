@@ -64,6 +64,7 @@ const elements = {
   modalCancel: document.getElementById("modal-cancel"),
   modalSave: document.getElementById("modal-save"),
   addCollectionBtn: document.getElementById("add-collection-btn"),
+  settingsDisclosure: document.getElementById("settings-disclosure"),
   themeSelect: document.getElementById("theme-select"),
   densitySelect: document.getElementById("density-select"),
   iconSizeInput: document.getElementById("icon-size-input"),
@@ -131,6 +132,7 @@ function setupViewControls() {
 function initializeSettings() {
   syncSettingsControls();
   applySettings();
+  initializeSettingsDisclosure();
 
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applySettings);
 
@@ -157,6 +159,18 @@ function initializeSettings() {
   elements.accentColorInput.addEventListener("input", (event) => {
     settings.accentColor = event.target.value;
     saveSettings();
+  });
+}
+
+function initializeSettingsDisclosure() {
+  const isOpen = localStorage.getItem("dockmark-settings-open") === "true";
+  elements.settingsDisclosure.open = isOpen;
+
+  elements.settingsDisclosure.addEventListener("toggle", () => {
+    localStorage.setItem(
+      "dockmark-settings-open",
+      String(elements.settingsDisclosure.open),
+    );
   });
 }
 

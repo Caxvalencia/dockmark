@@ -241,16 +241,59 @@ body {
 }
 
 .sidebar-footer {
-  padding: 20px;
+  padding: 12px 20px;
   border-top: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
+.settings-disclosure {
+  display: grid;
+  gap: 12px;
+}
+
+.settings-disclosure summary {
+  list-style: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 8px 10px;
+  user-select: none;
+}
+
+.settings-disclosure summary::-webkit-details-marker {
+  display: none;
+}
+
+.settings-disclosure summary::after {
+  content: "›";
+  color: var(--text-muted);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  transition: transform 0.2s;
+}
+
+.settings-disclosure[open] summary::after {
+  transform: rotate(90deg);
+}
+
+.settings-disclosure summary:hover {
+  color: var(--text-main);
+  border-color: var(--text-muted);
+}
+
 .settings-panel {
   display: grid;
   gap: 12px;
+  padding-top: 12px;
 }
 
 .settings-panel label {
