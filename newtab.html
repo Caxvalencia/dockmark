@@ -20,6 +20,23 @@
 
         <div class="search-container">
           <input type="text" id="search-input" placeholder="Buscar..." />
+          <div class="search-filters" aria-label="Filtros de búsqueda">
+            <select id="search-type-filter" title="Tipo de resultado">
+              <option value="all">Todo</option>
+              <option value="links">Enlaces</option>
+              <option value="folders">Carpetas</option>
+            </select>
+            <select id="search-scope-filter" title="Alcance de búsqueda">
+              <option value="all">Todos</option>
+              <option value="current">Espacio actual</option>
+            </select>
+            <input
+              type="text"
+              id="domain-filter"
+              placeholder="Dominio"
+              title="Filtrar por dominio"
+            />
+          </div>
         </div>
 
         <nav class="sidebar-nav">
@@ -32,9 +49,56 @@
         </nav>
 
         <div class="sidebar-footer">
-          <button class="settings-btn" id="theme-toggle">
-            🌓 Cambiar Tema
-          </button>
+          <div class="settings-panel">
+            <label>
+              Tema
+              <select id="theme-select">
+                <option value="system">Sistema</option>
+                <option value="light">Claro</option>
+                <option value="dark">Oscuro</option>
+              </select>
+            </label>
+            <label>
+              Densidad
+              <select id="density-select">
+                <option value="compact">Compacta</option>
+                <option value="comfortable">Cómoda</option>
+                <option value="large">Grande</option>
+              </select>
+            </label>
+            <label>
+              Iconos
+              <input type="range" id="icon-size-input" min="24" max="56" />
+            </label>
+            <label>
+              Ancho mínimo
+              <input
+                type="number"
+                id="min-card-width-input"
+                min="180"
+                max="420"
+                step="10"
+              />
+            </label>
+            <label>
+              Acento
+              <input type="color" id="accent-color-input" />
+            </label>
+            <div class="settings-actions">
+              <button class="settings-btn" id="export-config-btn">
+                Exportar
+              </button>
+              <button class="settings-btn" id="import-config-btn">
+                Importar
+              </button>
+              <input
+                type="file"
+                id="import-config-input"
+                accept="application/json"
+                hidden
+              />
+            </div>
+          </div>
         </div>
       </aside>
 
@@ -63,6 +127,7 @@
           <button class="control-btn" id="collapse-all-btn">
             COLAPSAR TODO
           </button>
+          <button class="control-btn" id="diagnostics-btn">DIAGNÓSTICO</button>
         </div>
 
         <div id="collections-container" class="collections-container">
@@ -75,6 +140,8 @@
     <div id="context-menu" class="context-menu hidden">
       <ul>
         <li id="cm-open-new">Abrir en pestaña nueva</li>
+        <li id="cm-copy-url">Copiar URL</li>
+        <li id="cm-move">Mover a colección</li>
         <li id="cm-edit">Editar</li>
         <li id="cm-delete" class="danger">Eliminar</li>
       </ul>
@@ -95,6 +162,34 @@
         <div class="modal-actions">
           <button id="modal-cancel" class="btn">Cancelar</button>
           <button id="modal-save" class="btn primary-btn">Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="move-modal" class="modal hidden">
+      <div class="modal-content">
+        <h3>Mover marcador</h3>
+        <div class="form-group">
+          <label for="move-target">Colección</label>
+          <select id="move-target"></select>
+        </div>
+        <div class="modal-actions">
+          <button id="move-cancel" class="btn">Cancelar</button>
+          <button id="move-save" class="btn primary-btn">Mover</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="diagnostics-modal" class="modal hidden">
+      <div class="modal-content wide-modal">
+        <h3>Diagnóstico</h3>
+        <div class="diagnostics-actions">
+          <button id="find-duplicates-btn" class="btn">Buscar duplicados</button>
+          <button id="check-broken-btn" class="btn">Revisar enlaces rotos</button>
+        </div>
+        <div id="diagnostics-results" class="diagnostics-results"></div>
+        <div class="modal-actions">
+          <button id="diagnostics-close" class="btn primary-btn">Cerrar</button>
         </div>
       </div>
     </div>

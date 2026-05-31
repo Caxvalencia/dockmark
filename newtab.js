@@ -2,15 +2,41 @@
 
 const state = {
   rootFolders: [],
+  bookmarkTree: [],
+  allBookmarks: [],
+  folderOptions: [],
   currentSpaceId: null,
   contextNode: null,
+  movingNode: null,
   isCreating: false,
+  currentSearchQuery: "",
+  currentNodes: [],
+  currentSpaceTitle: "",
   expandedFolders: new Set(
     JSON.parse(localStorage.getItem("dockmark-expanded-folders") || "[]"),
   ),
   collapsedCollections: new Set(
     JSON.parse(localStorage.getItem("dockmark-collapsed-collections") || "[]"),
   ),
+  usageCounts: JSON.parse(localStorage.getItem("dockmark-usage-counts") || "{}"),
+};
+
+const DEFAULT_SETTINGS = {
+  theme: "system",
+  density: "comfortable",
+  iconSize: 40,
+  minCardWidth: 260,
+  accentColor: "#f04e63",
+};
+
+const SETTINGS_KEY = "dockmark-settings";
+const savedSettings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
+const legacyTheme = localStorage.getItem("dockmark-theme");
+
+const settings = {
+  ...DEFAULT_SETTINGS,
+  ...(legacyTheme && !savedSettings.theme ? { theme: legacyTheme } : {}),
+  ...savedSettings,
 };
 
 const elements = {
@@ -19,12 +45,18 @@ const elements = {
   currentSpaceTitle: document.getElementById("current-space-title"),
   collectionCount: document.getElementById("collection-count"),
   searchInput: document.getElementById("search-input"),
+  searchTypeFilter: document.getElementById("search-type-filter"),
+  searchScopeFilter: document.getElementById("search-scope-filter"),
+  domainFilter: document.getElementById("domain-filter"),
   contextMenu: document.getElementById("context-menu"),
   cmOpenNew: document.getElementById("cm-open-new"),
+  cmCopyUrl: document.getElementById("cm-copy-url"),
+  cmMove: document.getElementById("cm-move"),
   cmEdit: document.getElementById("cm-edit"),
   cmDelete: document.getElementById("cm-delete"),
   expandAllBtn: document.getElementById("expand-all-btn"),
   collapseAllBtn: document.getElementById("collapse-all-btn"),
+  diagnosticsBtn: document.getElementById("diagnostics-btn"),
   editModal: document.getElementById("edit-modal"),
   editName: document.getElementById("edit-name"),
   editUrl: document.getElementById("edit-url"),
@@ -32,16 +64,36 @@ const elements = {
   modalCancel: document.getElementById("modal-cancel"),
   modalSave: document.getElementById("modal-save"),
   addCollectionBtn: document.getElementById("add-collection-btn"),
+  themeSelect: document.getElementById("theme-select"),
+  densitySelect: document.getElementById("density-select"),
+  iconSizeInput: document.getElementById("icon-size-input"),
+  minCardWidthInput: document.getElementById("min-card-width-input"),
+  accentColorInput: document.getElementById("accent-color-input"),
+  exportConfigBtn: document.getElementById("export-config-btn"),
+  importConfigBtn: document.getElementById("import-config-btn"),
+  importConfigInput: document.getElementById("import-config-input"),
+  moveModal: document.getElementById("move-modal"),
+  moveTarget: document.getElementById("move-target"),
+  moveCancel: document.getElementById("move-cancel"),
+  moveSave: document.getElementById("move-save"),
+  diagnosticsModal: document.getElementById("diagnostics-modal"),
+  diagnosticsResults: document.getElementById("diagnostics-results"),
+  diagnosticsClose: document.getElementById("diagnostics-close"),
+  findDuplicatesBtn: document.getElementById("find-duplicates-btn"),
+  checkBrokenBtn: document.getElementById("check-broken-btn"),
 };
 
 document.addEventListener("DOMContentLoaded", initialize);
 
 async function initialize() {
-  initializeTheme();
+  initializeSettings();
   await loadBookmarks();
   setupSearch();
   setupContextMenu();
   setupModal();
+  setupMoveModal();
+  setupDiagnostics();
+  setupConfigImportExport();
   attachBookmarkListeners();
   setupViewControls();
 }
@@ -76,21 +128,73 @@ function setupViewControls() {
   }
 }
 
-function initializeTheme() {
-  const savedTheme = localStorage.getItem("dockmark-theme") || "light";
+function initializeSettings() {
+  syncSettingsControls();
+  applySettings();
 
-  if (savedTheme === "dark") {
-    document.body.classList.add("dark-theme");
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applySettings);
+
+  elements.themeSelect.addEventListener("change", (event) => {
+    settings.theme = event.target.value;
+    saveSettings();
+  });
+
+  elements.densitySelect.addEventListener("change", (event) => {
+    settings.density = event.target.value;
+    saveSettings();
+  });
+
+  elements.iconSizeInput.addEventListener("input", (event) => {
+    settings.iconSize = Number(event.target.value);
+    saveSettings();
+  });
+
+  elements.minCardWidthInput.addEventListener("input", (event) => {
+    settings.minCardWidth = Number(event.target.value);
+    saveSettings();
+  });
+
+  elements.accentColorInput.addEventListener("input", (event) => {
+    settings.accentColor = event.target.value;
+    saveSettings();
+  });
+}
+
+function syncSettingsControls() {
+  elements.themeSelect.value = settings.theme;
+  elements.densitySelect.value = settings.density;
+  elements.iconSizeInput.value = settings.iconSize;
+  elements.minCardWidthInput.value = settings.minCardWidth;
+  elements.accentColorInput.value = settings.accentColor;
+}
+
+function saveSettings() {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  localStorage.setItem("dockmark-theme", settings.theme);
+  applySettings();
+}
+
+function applySettings() {
+  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const useDark = settings.theme === "dark" || (settings.theme === "system" && prefersDark);
+  document.body.classList.toggle("dark-theme", useDark);
+  document.body.classList.remove("density-compact", "density-large");
+
+  if (settings.density === "compact") {
+    document.body.classList.add("density-compact");
   }
 
-  const themeBtn = document.getElementById("theme-toggle");
-  if (themeBtn) {
-    themeBtn.addEventListener("click", () => {
-      document.body.classList.toggle("dark-theme");
-      const isDark = document.body.classList.contains("dark-theme");
-      localStorage.setItem("dockmark-theme", isDark ? "dark" : "light");
-    });
+  if (settings.density === "large") {
+    document.body.classList.add("density-large");
   }
+
+  document.documentElement.style.setProperty("--accent-color", settings.accentColor);
+  document.body.style.setProperty("--card-min-width", `${settings.minCardWidth}px`);
+  document.body.style.setProperty("--card-icon-size", `${settings.iconSize}px`);
+  document.body.style.setProperty(
+    "--card-favicon-size",
+    `${Math.max(18, settings.iconSize - 8)}px`,
+  );
 }
 
 async function loadBookmarks() {
@@ -98,9 +202,12 @@ async function loadBookmarks() {
     // Get the tree from root
     const tree = await chrome.bookmarks.getTree();
     const rootNodes = tree[0].children || [];
+    state.bookmarkTree = rootNodes;
 
     // Filter out top-level folders to be spaces in the sidebar
     state.rootFolders = rootNodes.filter((node) => !node.url);
+    state.allBookmarks = flattenBookmarkTree(rootNodes);
+    state.folderOptions = buildFolderOptions(rootNodes);
 
     renderSidebar();
 
@@ -127,6 +234,51 @@ async function loadBookmarks() {
     elements.collectionsContainer.innerHTML =
       "<p class='empty-state'>Error al cargar los marcadores.</p>";
   }
+}
+
+function flattenBookmarkTree(nodes, folderPath = "", folderId = null) {
+  let bookmarks = [];
+
+  nodes.forEach((node) => {
+    if (node.url) {
+      bookmarks.push({
+        ...node,
+        folderPath: folderPath || "Raíz",
+        folderId,
+      });
+      return;
+    }
+
+    const nextPath = folderPath ? `${folderPath} / ${node.title}` : node.title;
+    bookmarks.push({
+      ...node,
+      folderPath,
+      folderId: node.id,
+    });
+
+    if (node.children) {
+      bookmarks = bookmarks.concat(flattenBookmarkTree(node.children, nextPath, node.id));
+    }
+  });
+
+  return bookmarks;
+}
+
+function buildFolderOptions(nodes, path = "") {
+  let folders = [];
+
+  nodes.forEach((node) => {
+    if (!node.url) {
+      const title = path ? `${path} / ${node.title}` : node.title;
+      folders.push({ id: node.id, title });
+
+      if (node.children) {
+        folders = folders.concat(buildFolderOptions(node.children, title));
+      }
+    }
+  });
+
+  return folders;
 }
 
 function saveExpandedState() {
@@ -288,6 +440,10 @@ function flattenFolders(nodes, path = "") {
 
 function renderCollections(nodes, spaceTitle = "") {
   elements.collectionsContainer.replaceChildren();
+  state.currentNodes = nodes;
+  state.currentSpaceTitle = spaceTitle;
+
+  renderFrequentRow(nodes);
 
   // Separar los enlaces directos (sin carpeta)
   const directLinks = nodes.filter((node) => node.url);
@@ -321,7 +477,19 @@ function renderCollections(nodes, spaceTitle = "") {
   }
 }
 
-function renderCollectionRow(title, items, folderNode = null) {
+function renderFrequentRow(nodes) {
+  const idsInSpace = new Set(flattenBookmarkTree(nodes).map((node) => node.id));
+  const frequentItems = state.allBookmarks
+    .filter((node) => node.url && idsInSpace.has(node.id) && state.usageCounts[node.id])
+    .sort((a, b) => (state.usageCounts[b.id] || 0) - (state.usageCounts[a.id] || 0))
+    .slice(0, 8);
+
+  if (frequentItems.length > 0) {
+    renderCollectionRow("Frecuentes", frequentItems, null, { isSystem: true });
+  }
+}
+
+function renderCollectionRow(title, items, folderNode = null, options = {}) {
   const row = document.createElement("div");
   row.className = "collection-row";
   if (folderNode && folderNode.id) {
@@ -345,13 +513,17 @@ function renderCollectionRow(title, items, folderNode = null) {
   toggleBtn.textContent = "▼";
 
   const titleEl = document.createElement("h2");
-  titleEl.innerHTML = `${title} <span style="color:var(--text-muted);font-size:14px;font-weight:normal;margin-left:8px;">(${items.length})</span>`;
+  titleEl.textContent = title;
+  const countEl = document.createElement("span");
+  countEl.className = "collection-size";
+  countEl.textContent = `(${items.length})`;
+  titleEl.appendChild(countEl);
 
   headerLeft.appendChild(toggleBtn);
   headerLeft.appendChild(titleEl);
   header.appendChild(headerLeft);
 
-  if (folderNode && folderNode.id !== state.currentSpaceId) {
+  if (folderNode && folderNode.id !== state.currentSpaceId && !options.isSystem) {
     const editBtn = document.createElement("button");
     editBtn.className = "collection-edit-btn";
     editBtn.textContent = "✏️";
@@ -368,8 +540,8 @@ function renderCollectionRow(title, items, folderNode = null) {
   if (items.length === 0) {
     cardsContainer.innerHTML = "<p class='empty-state'>No hay elementos</p>";
   } else {
-    items.forEach((item) => {
-      cardsContainer.appendChild(createCard(item));
+    items.forEach((item, index) => {
+      cardsContainer.appendChild(createCard(item, folderNode, index));
     });
   }
 
@@ -423,10 +595,17 @@ function renderCollectionRow(title, items, folderNode = null) {
   }
 }
 
-function createCard(node) {
+function createCard(node, parentFolder = null, itemIndex = null) {
   const isFolder = !node.url;
   const card = document.createElement(isFolder ? "div" : "a");
   card.className = "bookmark-card";
+  card.dataset.id = node.id;
+  if (parentFolder && parentFolder.id) {
+    card.dataset.parentId = parentFolder.id;
+  }
+  if (itemIndex !== null) {
+    card.dataset.index = String(itemIndex);
+  }
 
   if (!isFolder) {
     card.href = node.url;
@@ -460,20 +639,37 @@ function createCard(node) {
 
   const title = document.createElement("div");
   title.className = "card-title";
-  title.textContent =
-    node.title || (isFolder ? "Carpeta sin nombre" : "Enlace sin nombre");
+  setHighlightedText(
+    title,
+    node.title || (isFolder ? "Carpeta sin nombre" : "Enlace sin nombre"),
+    state.currentSearchQuery,
+  );
 
   header.appendChild(iconContainer);
   header.appendChild(title);
   card.appendChild(header);
 
   if (!isFolder) {
+    const actions = document.createElement("div");
+    actions.className = "card-actions";
+    actions.appendChild(createQuickAction("↗", "Abrir en pestaña nueva", async () => {
+      registerUsage(node.id);
+      await chrome.tabs.create({ url: node.url });
+    }));
+    actions.appendChild(createQuickAction("⧉", "Copiar URL", async () => {
+      await copyToClipboard(node.url);
+    }));
+    actions.appendChild(createQuickAction("⇄", "Mover a colección", () => {
+      openMoveModal(node);
+    }));
+    card.appendChild(actions);
+
     const urlText = document.createElement("div");
     urlText.className = "card-url";
     try {
-      urlText.textContent = new URL(node.url).hostname;
+      setHighlightedText(urlText, new URL(node.url).hostname, state.currentSearchQuery);
     } catch {
-      urlText.textContent = node.url;
+      setHighlightedText(urlText, node.url, state.currentSearchQuery);
     }
     card.appendChild(urlText);
   }
@@ -493,6 +689,7 @@ function createCard(node) {
   } else {
     card.addEventListener("click", (e) => {
       e.preventDefault();
+      registerUsage(node.id);
       chrome.tabs.update({ url: node.url });
     });
   }
@@ -540,14 +737,109 @@ function createCard(node) {
     });
   }
 
+  if (!isFolder) {
+    card.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      card.classList.add("reorder-target");
+    });
+
+    card.addEventListener("dragleave", () => {
+      card.classList.remove("reorder-target");
+    });
+
+    card.addEventListener("drop", async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      card.classList.remove("reorder-target");
+      const draggedId = e.dataTransfer.getData("text/plain");
+      if (!draggedId || draggedId === node.id || !parentFolder) return;
+
+      try {
+        const [draggedNode] = await chrome.bookmarks.get(draggedId);
+        let targetIndex = Number(card.dataset.index || 0);
+        if (draggedNode.parentId === parentFolder.id && draggedNode.index < targetIndex) {
+          targetIndex -= 1;
+        }
+        await chrome.bookmarks.move(draggedId, {
+          parentId: parentFolder.id,
+          index: targetIndex,
+        });
+      } catch (err) {
+        console.error("Error al reordenar:", err);
+      }
+    });
+  }
+
   return card;
 }
 
-function setupSearch() {
-  elements.searchInput.addEventListener("input", async (e) => {
-    const query = e.target.value.trim().toLowerCase();
+function createQuickAction(label, title, handler) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "icon-btn";
+  button.textContent = label;
+  button.title = title;
+  button.addEventListener("click", async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    await handler();
+  });
+  return button;
+}
 
-    if (!query) {
+function setHighlightedText(element, text, query) {
+  element.replaceChildren();
+  const normalizedQuery = query.trim();
+
+  if (!normalizedQuery) {
+    element.textContent = text;
+    return;
+  }
+
+  const lowerText = text.toLowerCase();
+  const lowerQuery = normalizedQuery.toLowerCase();
+  const matchIndex = lowerText.indexOf(lowerQuery);
+
+  if (matchIndex === -1) {
+    element.textContent = text;
+    return;
+  }
+
+  element.appendChild(document.createTextNode(text.slice(0, matchIndex)));
+  const mark = document.createElement("mark");
+  mark.className = "highlight";
+  mark.textContent = text.slice(matchIndex, matchIndex + normalizedQuery.length);
+  element.appendChild(mark);
+  element.appendChild(document.createTextNode(text.slice(matchIndex + normalizedQuery.length)));
+}
+
+function registerUsage(bookmarkId) {
+  state.usageCounts[bookmarkId] = (state.usageCounts[bookmarkId] || 0) + 1;
+  localStorage.setItem("dockmark-usage-counts", JSON.stringify(state.usageCounts));
+}
+
+async function copyToClipboard(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    textarea.remove();
+  }
+}
+
+function setupSearch() {
+  const runSearch = () => {
+    const query = elements.searchInput.value.trim();
+    const typeFilter = elements.searchTypeFilter.value;
+    const scopeFilter = elements.searchScopeFilter.value;
+    const domainFilter = elements.domainFilter.value.trim().toLowerCase();
+    state.currentSearchQuery = query;
+
+    if (!query && !domainFilter && typeFilter === "all" && scopeFilter === "all") {
       // Reset view to current space
       const currentSpace = state.rootFolders.find(
         (f) => f.id === state.currentSpaceId,
@@ -558,25 +850,67 @@ function setupSearch() {
       return;
     }
 
-    // Search bookmarks
-    try {
-      const results = await chrome.bookmarks.search(query);
-      elements.currentSpaceTitle.textContent = "Resultados de búsqueda";
+    const lowerQuery = query.toLowerCase();
+    const currentIds =
+      scopeFilter === "current" ? new Set(flattenBookmarkTree(state.currentNodes).map((n) => n.id)) : null;
 
-      // We can group results by folder or just show a flat list. Let's do a single list for simplicity.
-      elements.collectionsContainer.replaceChildren();
-      if (results.length === 0) {
-        elements.collectionsContainer.innerHTML =
-          "<p class='empty-state'>No se encontraron resultados.</p>";
-        elements.collectionCount.textContent = "0 resultados";
-      } else {
-        renderCollectionRow(`Resultados para "${query}"`, results);
-        elements.collectionCount.textContent = `${results.length} resultados`;
-      }
-    } catch (e) {
-      console.error(e);
-    }
+    const results = state.allBookmarks.filter((node) => {
+      const isFolder = !node.url;
+      if (typeFilter === "links" && isFolder) return false;
+      if (typeFilter === "folders" && !isFolder) return false;
+      if (currentIds && !currentIds.has(node.id)) return false;
+
+      const host = getHostname(node.url || "");
+      if (domainFilter && !host.includes(domainFilter)) return false;
+
+      if (!lowerQuery) return true;
+
+      return [node.title, node.url, node.folderPath]
+        .filter(Boolean)
+        .some((value) => value.toLowerCase().includes(lowerQuery));
+    });
+
+    renderSearchResults(results, query);
+  };
+
+  elements.searchInput.addEventListener("input", runSearch);
+  elements.searchTypeFilter.addEventListener("change", runSearch);
+  elements.searchScopeFilter.addEventListener("change", runSearch);
+  elements.domainFilter.addEventListener("input", runSearch);
+}
+
+function renderSearchResults(results, query) {
+  elements.currentSpaceTitle.textContent = "Resultados de búsqueda";
+  elements.collectionsContainer.replaceChildren();
+
+  if (results.length === 0) {
+    elements.collectionsContainer.innerHTML =
+      "<p class='empty-state'>No se encontraron resultados.</p>";
+    elements.collectionCount.textContent = "0 resultados";
+    return;
+  }
+
+  const groups = new Map();
+  results.forEach((node) => {
+    const groupTitle = node.folderPath || "Carpetas";
+    if (!groups.has(groupTitle)) groups.set(groupTitle, []);
+    groups.get(groupTitle).push(node);
   });
+
+  groups.forEach((items, title) => {
+    renderCollectionRow(`${title} · resultados`, items);
+  });
+
+  elements.collectionCount.textContent = `${results.length} resultados`;
+  state.currentSearchQuery = query;
+}
+
+function getHostname(url) {
+  try {
+    return new URL(url).hostname.toLowerCase();
+  } catch {
+    return "";
+  }
 }
 
 function attachBookmarkListeners() {
@@ -608,8 +942,12 @@ function showContextMenu(x, y, node, isFolder) {
   // Ocultar "Abrir en nueva pestaña" si es carpeta
   if (isFolder) {
     elements.cmOpenNew.style.display = "none";
+    elements.cmCopyUrl.style.display = "none";
+    elements.cmMove.style.display = "none";
   } else {
     elements.cmOpenNew.style.display = "block";
+    elements.cmCopyUrl.style.display = "block";
+    elements.cmMove.style.display = "block";
   }
 }
 
@@ -621,7 +959,20 @@ function setupContextMenu() {
 
   elements.cmOpenNew.addEventListener("click", () => {
     if (state.contextNode && state.contextNode.url) {
+      registerUsage(state.contextNode.id);
       chrome.tabs.create({ url: state.contextNode.url });
+    }
+  });
+
+  elements.cmCopyUrl.addEventListener("click", async () => {
+    if (state.contextNode && state.contextNode.url) {
+      await copyToClipboard(state.contextNode.url);
+    }
+  });
+
+  elements.cmMove.addEventListener("click", () => {
+    if (state.contextNode && state.contextNode.url) {
+      openMoveModal(state.contextNode);
     }
   });
 
@@ -646,6 +997,43 @@ function setupContextMenu() {
           console.error("Error al eliminar", e);
         }
       }
+    }
+  });
+}
+
+function openMoveModal(node) {
+  state.movingNode = node;
+  elements.moveTarget.replaceChildren();
+
+  state.folderOptions.forEach((folder) => {
+    const option = document.createElement("option");
+    option.value = folder.id;
+    option.textContent = folder.title;
+    option.selected = node.parentId === folder.id || node.folderId === folder.id;
+    elements.moveTarget.appendChild(option);
+  });
+
+  elements.moveModal.classList.remove("hidden");
+}
+
+function setupMoveModal() {
+  const closeMoveModal = () => {
+    elements.moveModal.classList.add("hidden");
+    state.movingNode = null;
+  };
+
+  elements.moveCancel.addEventListener("click", closeMoveModal);
+  elements.moveSave.addEventListener("click", async () => {
+    if (!state.movingNode || !elements.moveTarget.value) return;
+
+    try {
+      await chrome.bookmarks.move(state.movingNode.id, {
+        parentId: elements.moveTarget.value,
+      });
+      closeMoveModal();
+    } catch (error) {
+      console.error("Error al mover marcador", error);
+      alert("No se pudo mover el marcador.");
     }
   });
 }
@@ -714,4 +1102,178 @@ function setupModal() {
       alert("Hubo un error al guardar los cambios.");
     }
   });
+}
+
+function setupConfigImportExport() {
+  elements.exportConfigBtn.addEventListener("click", () => {
+    const payload = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      settings,
+      expandedFolders: [...state.expandedFolders],
+      collapsedCollections: [...state.collapsedCollections],
+      currentSpaceId: state.currentSpaceId,
+      usageCounts: state.usageCounts,
+      pinned: JSON.parse(localStorage.getItem("dockmark-pinned") || "[]"),
+      tags: JSON.parse(localStorage.getItem("dockmark-tags") || "{}"),
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: "application/json",
+    });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "dockmark-config.json";
+    link.click();
+    URL.revokeObjectURL(link.href);
+  });
+
+  elements.importConfigBtn.addEventListener("click", () => {
+    elements.importConfigInput.click();
+  });
+
+  elements.importConfigInput.addEventListener("change", async (event) => {
+    const [file] = event.target.files;
+    if (!file) return;
+
+    try {
+      const payload = JSON.parse(await file.text());
+      Object.assign(settings, DEFAULT_SETTINGS, payload.settings || {});
+      state.expandedFolders = new Set(payload.expandedFolders || []);
+      state.collapsedCollections = new Set(payload.collapsedCollections || []);
+      state.usageCounts = payload.usageCounts || {};
+
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+      localStorage.setItem(
+        "dockmark-expanded-folders",
+        JSON.stringify([...state.expandedFolders]),
+      );
+      localStorage.setItem(
+        "dockmark-collapsed-collections",
+        JSON.stringify([...state.collapsedCollections]),
+      );
+      localStorage.setItem("dockmark-usage-counts", JSON.stringify(state.usageCounts));
+
+      if (payload.currentSpaceId) {
+        localStorage.setItem("dockmark-current-space", payload.currentSpaceId);
+      }
+      if (payload.pinned) {
+        localStorage.setItem("dockmark-pinned", JSON.stringify(payload.pinned));
+      }
+      if (payload.tags) {
+        localStorage.setItem("dockmark-tags", JSON.stringify(payload.tags));
+      }
+
+      syncSettingsControls();
+      applySettings();
+      await loadBookmarks();
+    } catch (error) {
+      console.error("Error al importar configuración", error);
+      alert("El archivo de configuración no es válido.");
+    } finally {
+      event.target.value = "";
+    }
+  });
+}
+
+function setupDiagnostics() {
+  elements.diagnosticsBtn.addEventListener("click", () => {
+    elements.diagnosticsResults.innerHTML =
+      "<p class='empty-state'>Elige una revisión para empezar.</p>";
+    elements.diagnosticsModal.classList.remove("hidden");
+  });
+
+  elements.diagnosticsClose.addEventListener("click", () => {
+    elements.diagnosticsModal.classList.add("hidden");
+  });
+
+  elements.findDuplicatesBtn.addEventListener("click", renderDuplicateDiagnostics);
+  elements.checkBrokenBtn.addEventListener("click", checkBrokenLinks);
+}
+
+function renderDuplicateDiagnostics() {
+  const groups = new Map();
+  state.allBookmarks
+    .filter((node) => node.url)
+    .forEach((node) => {
+      const normalizedUrl = normalizeUrl(node.url);
+      if (!groups.has(normalizedUrl)) groups.set(normalizedUrl, []);
+      groups.get(normalizedUrl).push(node);
+    });
+
+  const duplicates = [...groups.entries()].filter(([, items]) => items.length > 1);
+  elements.diagnosticsResults.replaceChildren();
+
+  if (duplicates.length === 0) {
+    elements.diagnosticsResults.innerHTML =
+      "<p class='empty-state'>No se encontraron URLs duplicadas.</p>";
+    return;
+  }
+
+  duplicates.forEach(([url, items]) => {
+    elements.diagnosticsResults.appendChild(
+      createDiagnosticsGroup(`${items.length} duplicados · ${url}`, items),
+    );
+  });
+}
+
+async function checkBrokenLinks() {
+  const links = state.allBookmarks.filter((node) => node.url).slice(0, 80);
+  elements.diagnosticsResults.innerHTML =
+    "<p class='empty-state'>Revisando enlaces. Chrome puede bloquear algunos dominios por permisos o CORS.</p>";
+
+  const broken = [];
+  for (const link of links) {
+    try {
+      let response = await fetch(link.url, { method: "HEAD", cache: "no-store" });
+      if (response.status === 405) {
+        response = await fetch(link.url, { method: "GET", cache: "no-store" });
+      }
+      if (response.status >= 400) {
+        broken.push(link);
+      }
+    } catch {
+      broken.push(link);
+    }
+  }
+
+  elements.diagnosticsResults.replaceChildren();
+  if (broken.length === 0) {
+    elements.diagnosticsResults.innerHTML =
+      "<p class='empty-state'>No se detectaron enlaces rotos en la muestra revisada.</p>";
+    return;
+  }
+
+  elements.diagnosticsResults.appendChild(
+    createDiagnosticsGroup(`${broken.length} posibles enlaces rotos`, broken),
+  );
+}
+
+function createDiagnosticsGroup(title, items) {
+  const group = document.createElement("div");
+  group.className = "diagnostics-group";
+
+  const heading = document.createElement("h4");
+  heading.textContent = title;
+  group.appendChild(heading);
+
+  const list = document.createElement("ul");
+  items.forEach((item) => {
+    const li = document.createElement("li");
+    li.textContent = `${item.title || "Sin título"} · ${item.folderPath || "Raíz"}`;
+    list.appendChild(li);
+  });
+  group.appendChild(list);
+
+  return group;
+}
+
+function normalizeUrl(url) {
+  try {
+    const parsed = new URL(url);
+    parsed.hash = "";
+    parsed.pathname = parsed.pathname.replace(/\/$/, "");
+    return parsed.toString().toLowerCase();
+  } catch {
+    return url.trim().toLowerCase();
+  }
 }

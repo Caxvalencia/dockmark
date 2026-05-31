@@ -10,6 +10,7 @@
     "128": "assets/dockmark-icon-128.png"
   },
   "permissions": ["bookmarks"],
+  "host_permissions": ["<all_urls>"],
   "action": {
     "default_title": "Abrir DockMark",
     "default_popup": "popup.html",
