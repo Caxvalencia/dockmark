@@ -379,9 +379,11 @@ async function updateBreadcrumbs(node) {
     const span = document.createElement("span");
     span.textContent = p.title;
     span.className = "breadcrumb-item";
+    if (index === path.length - 1) {
+      span.classList.add("current");
+    }
 
     if (index < path.length - 1) {
-      span.style.cursor = "pointer";
       span.addEventListener("click", () => selectSpace(p));
     }
 
@@ -389,8 +391,9 @@ async function updateBreadcrumbs(node) {
 
     if (index < path.length - 1) {
       const sep = document.createElement("span");
-      sep.textContent = "/";
+      sep.textContent = "›";
       sep.className = "breadcrumb-separator";
+      sep.setAttribute("aria-hidden", "true");
       elements.currentSpaceTitle.appendChild(sep);
     }
   });
@@ -426,11 +429,16 @@ function flattenFolders(nodes, path = "") {
 
   nodes.forEach((node) => {
     if (!node.url) {
-      const title = path ? `${path} / ${node.title}` : node.title;
-      folders.push({ folder: node, title: title, items: node.children || [] });
+      const titleParts = path ? [...path, node.title] : [node.title];
+      folders.push({
+        folder: node,
+        title: titleParts.join(" > "),
+        titleParts,
+        items: node.children || [],
+      });
 
       if (node.children) {
-        folders = folders.concat(flattenFolders(node.children, title));
+        folders = folders.concat(flattenFolders(node.children, titleParts));
       }
     }
   });
@@ -465,7 +473,9 @@ function renderCollections(nodes, spaceTitle = "") {
     // Solo renderizamos los enlaces directos dentro de esta carpeta,
     // porque las subcarpetas ya son sus propias colecciones
     const directItems = f.items.filter((item) => item.url);
-    renderCollectionRow(f.title, directItems, f.folder);
+    renderCollectionRow(f.title, directItems, f.folder, {
+      titleParts: f.titleParts,
+    });
     collectionsCount++;
   });
 
@@ -513,7 +523,8 @@ function renderCollectionRow(title, items, folderNode = null, options = {}) {
   toggleBtn.textContent = "▼";
 
   const titleEl = document.createElement("h2");
-  titleEl.textContent = title;
+  titleEl.className = "collection-title";
+  appendCollectionTitle(titleEl, options.titleParts || [title]);
   const countEl = document.createElement("span");
   countEl.className = "collection-size";
   countEl.textContent = `(${items.length})`;
@@ -593,6 +604,23 @@ function renderCollectionRow(title, items, folderNode = null, options = {}) {
       }
     });
   }
+}
+
+function appendCollectionTitle(titleEl, titleParts) {
+  titleParts.forEach((part, index) => {
+    const partEl = document.createElement("span");
+    partEl.className = "collection-title-part";
+    partEl.textContent = part;
+    titleEl.appendChild(partEl);
+
+    if (index < titleParts.length - 1) {
+      const separator = document.createElement("span");
+      separator.className = "collection-title-separator";
+      separator.textContent = "›";
+      separator.setAttribute("aria-hidden", "true");
+      titleEl.appendChild(separator);
+    }
+  });
 }
 
 function createCard(node, parentFolder = null, itemIndex = null) {

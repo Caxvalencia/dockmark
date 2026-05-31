@@ -8,6 +8,9 @@
   --accent-color: #f04e63;
   --accent-hover: #ff6b7e;
   --border-color: #dadce0;
+  --breadcrumb-pill-bg: #eaf1ff;
+  --breadcrumb-pill-text: #1557b7;
+  --breadcrumb-separator: #5f6368;
   --card-min-width: 260px;
   --card-padding: 12px;
   --card-gap: 16px;
@@ -25,6 +28,9 @@ body.dark-theme {
   --text-main: #ffffff;
   --text-muted: #9ba0a6;
   --border-color: #2c2c35;
+  --breadcrumb-pill-bg: rgba(83, 127, 214, 0.2);
+  --breadcrumb-pill-text: #9bbcff;
+  --breadcrumb-separator: #b4b8c1;
 }
 
 * {
@@ -303,8 +309,13 @@ body {
 }
 
 .main-header h1 {
-  font-size: 22px;
-  font-weight: 500;
+  font-size: 24px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  min-width: 0;
 }
 
 .header-actions {
@@ -320,16 +331,36 @@ body {
 
 .breadcrumb-item {
   color: var(--text-main);
-  transition: color 0.2s;
+  line-height: 1.25;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
 }
 
-.breadcrumb-item:hover {
-  color: var(--accent-color);
+.breadcrumb-item:not(.current) {
+  background: var(--breadcrumb-pill-bg);
+  border-radius: 999px;
+  color: var(--breadcrumb-pill-text);
+  cursor: pointer;
+  padding: 8px 18px;
+  font-weight: 500;
+}
+
+.breadcrumb-item:not(.current):hover {
+  color: var(--breadcrumb-pill-text);
+  background: color-mix(in srgb, var(--breadcrumb-pill-bg) 88%, var(--text-main));
+}
+
+.breadcrumb-item.current {
+  color: var(--text-main);
+  font-weight: 600;
 }
 
 .breadcrumb-separator {
-  color: var(--text-muted);
-  margin: 0 8px;
+  color: var(--breadcrumb-separator);
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .primary-btn {
@@ -402,6 +433,27 @@ body {
 .collection-header h2 {
   font-size: 18px;
   font-weight: 500;
+}
+
+.collection-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.collection-title-part:first-child:not(:last-child) {
+  background: var(--breadcrumb-pill-bg);
+  border-radius: 999px;
+  color: var(--breadcrumb-pill-text);
+  padding: 5px 14px;
+}
+
+.collection-title-separator {
+  color: var(--breadcrumb-separator);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .collection-size {
