@@ -446,7 +446,7 @@ function createCard(node) {
     // Attempt to get favicon
     try {
       const urlObj = new URL(node.url);
-      const faviconUrl = `https://www.google.com/s2/favicons?domain=${urlObj.hostname}&sz=32`;
+      const faviconUrl = `https://www.google.com/s2/favicons?domain=${urlObj.hostname}&sz=64`;
       const img = document.createElement("img");
       img.src = faviconUrl;
       img.onerror = () => {
